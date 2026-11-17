@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ассистент</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:var(--tg-theme-bg-color,#fff);--tx:var(--tg-theme-text-color,#111);--hint:var(--tg-theme-hint-color,#8a8a8e);--btn:var(--tg-theme-button-color,#2f80ed);--btx:var(--tg-theme-button-text-color,#fff);--card:var(--tg-theme-secondary-bg-color,#f2f2f7);--ok:#2fb344;--bad:#e5484d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+main{padding:14px;max-width:640px;margin:0 auto}
+h1{font-size:20px;margin:4px 0 12px}h2{font-size:16px;margin:18px 0 8px}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
+.hint{color:var(--hint);font-size:13px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid #8883}
+nav button{flex:1;background:none;border:0;color:var(--hint);font:inherit;font-size:12px;padding:6px 2px;border-radius:10px}
+nav button b{display:block;font-size:20px;font-weight:400}nav button.on{color:var(--btn);font-weight:600}
+.btn{background:var(--btn);color:var(--btx);border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:600;width:100%}
+.btn.s{width:auto;padding:8px 12px;font-size:13px}.btn.g{background:#8882;color:var(--tx)}.btn.r{background:var(--bad);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.status{display:flex;align-items:center;gap:10px;padding:14px;border-radius:14px;font-weight:600;margin-bottom:12px}
+.status.ok{background:#2fb34422;color:var(--ok)}.status.no{background:#f5a62322;color:#d98a00}
+.step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #8882;cursor:pointer}.step:last-child{border:0}
+.num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--btn);color:var(--btx);display:grid;place-items:center;font-weight:700;font-size:14px}
+.step.done .num{background:var(--ok)}.step.done .t{opacity:.55;text-decoration:line-through}
+.t b{display:block}.t span{color:var(--hint);font-size:13px}
+code{background:#8883;padding:1px 6px;border-radius:6px}
+details{border-bottom:1px solid #8882;padding:10px 0}summary{font-weight:600;cursor:pointer}details p{margin:8px 0 0;color:var(--hint)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:var(--card);border-radius:14px;padding:12px}.stat b{font-size:22px;display:block}
+input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #8885;background:var(--bg);color:var(--tx);font:inherit;margin-bottom:8px}
+.u{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card);border-radius:12px;margin-bottom:6px;cursor:pointer}
+.tag{font-size:11px;padding:2px 7px;border-radius:20px;background:#8883;margin-left:6px}.tag.v{background:#f5a62333}.tag.b{background:#e5484d33;color:var(--bad)}
+.sheet{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;z-index:9}.sheet.on{display:flex}
+.sheet>div{background:var(--bg);width:100%;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.sw{display:flex;justify-content:space-between;align-items:center}
+.sw i{width:46px;height:28px;border-radius:20px;background:#8885;position:relative;transition:.2s}.sw i:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on i{background:var(--ok)}.sw.on i:after{left:21px}
+.toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;z-index:99;opacity:0;transition:.25s;pointer-events:none}.toast.on{opacity:1}
+.hide{display:none!important}
+</style></head><body>
+<main id="app"><p class="hint">Загрузка…</p></main>
+<nav id="nav"></nav>
+<div class="sheet" id="sheet"><div id="sheetbody"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const tg=window.Telegram.WebApp;tg.ready();tg.expand();
+const $=s=>document.querySelector(s);let ME=null,tab="connect",timer=null;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fd=t=>new Date(t*1000).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)}
+async function api(path,body){
+  const r=await fetch(path,{method:body?"POST":"GET",headers:{"X-Init-Data":tg.initData,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Ошибка "+r.status);return j}
+const done=()=>{try{return JSON.parse(localStorage.getItem("steps")||"[]")}catch{return[]}};
+function tick(i){const d=done();const k=d.indexOf(i);k<0?d.push(i):d.splice(k,1);try{localStorage.setItem("steps",JSON.stringify(d))}catch{};render()}
+
+const STEPS=[
+ ["Откройте настройки Telegram","Нажмите на свою аватарку или «Настройки» в меню."],
+ ["Изменить профиль","Кнопка «Изменить» рядом с вашим именем."],
+ ["Автоматизация чатов","Прокрутите вниз: пункт может называться «Чат-боты» или «Telegram для бизнеса → Чат-боты»."],
+ ["Укажите бота @BOT","Введите @BOT и выберите, с какими чатами он работает (например, все личные)."],
+ ["Включите права","Отвечать на сообщения, читать сообщения, удалять сообщения. Для .timeprofile ещё «менять имя профиля»."],
+ ["Нажмите /start в боте","Без этого бот не сможет присылать вам удалённые сообщения и напоминания."],
+ ["Проверьте: отправьте .ping","В любом личном чате напишите .ping — бот ответит «pong». Все команды — .help"]];
+const FAQ=[
+ ["Нет пункта «Автоматизация чатов»","Обновите Telegram до последней версии. На старых версиях раздел бывает только у Premium."],
+ ["Бот не отвечает на .ping","Команды работают только в личных чатах и только когда их пишете вы, с точкой в начале. Проверьте, что боту выданы права «отвечать на сообщения»."],
+ ["Не приходят удалённые сообщения","Нажмите /start в боте и проверьте права «читать сообщения». Бот видит только то, что пришло после подключения. Фото с таймером не перехватываются."],
+ ["Как отключить","Настройки → Изменить профиль → Автоматизация чатов → удалить бота."],
+ ["Это безопасно?","Бот видит личные чаты, которые вы ему разрешили. Вы в любой момент можете убрать его или ограничить список чатов."]];
+
+function vConnect(){
+  const ok=ME.connected>0,d=done();
+  return `<h1>🔌 Подключение</h1>
+  <div class="status ${ok?"ok":"no"}">${ok?"✅ Бот подключён к вашему аккаунту":"⏳ Ждём подключения… страница обновится сама"}</div>
+  ${ok?`<div class="card">Готово! Отправьте <code>.ping</code> в любом личном чате и откройте <code>.help</code>.</div>`:""}
+  <div class="card">${STEPS.map((s,i)=>`<div class="step ${d.includes(i)?"done":""}" onclick="tick(${i})"><div class="num">${d.includes(i)?"✓":i+1}</div><div class="t"><b>${esc(s[0].replace("@BOT","@"+ME.bot))}</b><span>${esc(s[1].replace("@BOT","@"+ME.bot))}</span></div></div>`).join("")}</div>
+  <button class="btn g" onclick="tg.openTelegramLink('https://t.me/'+ME.bot)">Открыть чат с ботом</button>
+  <h2>Частые вопросы</h2><div class="card">${FAQ.map(f=>`<details><summary>${esc(f[0])}</summary><p>${esc(f[1])}</p></details>`).join("")}</div>`}
+
+function vPlans(){
+  const P=ME.prices,subs=ME.subs.length?ME.subs.map(s=>`<b>${s.name}</b> до ${fd(s.until).slice(0,10)}`).join(" · "):"<b>FREE</b>";
+  const plan=(n,t,p,d)=>`<div class="card"><div class="sw"><b>${n}</b><b>${P[t]} ⭐ / ${ME.sub_days} дн.</b></div><div class="hint">${d}</div></div>`;
+  return `<h1>💳 Тарифы</h1><div class="card">Ваш тариф: ${subs}</div>
+  ${plan("🔥 КОМБО PREMIUM+VIP",3,0,"Обе подписки сразу — выгоднее всего")}${plan("⭐ PREMIUM",1,0,"Анимации и медиа")}${plan("👑 VIP",2,0,"Модерация, профиль и авто-функции")}
+  <button class="btn" onclick="tg.close();">Купить в чате с ботом → Тарифы</button>
+  <p class="hint">Оплата проходит в боте через Telegram Stars: /tariffs. Промокод: /promo КОД.</p>`}
+
+let ADM={q:"",ov:null,users:[]};
+function vAdmin(){
+  const o=ADM.ov;if(!o)return `<h1>👑 Админка</h1><p class="hint">Загрузка…</p>`;
+  const st=(a,b)=>`<div class="stat"><b>${a}</b><span class="hint">${b}</span></div>`;
+  return `<h1>${ME.admin?"👑 Админка":"🛡 Мини-админка"}</h1>
+  <div class="grid">${st(o.users,"пользователей")}${st(o.active24,"активны за 24 ч")}${st(o.premium,"PREMIUM")}${st(o.vip,"VIP")}${st(o.stars+" ⭐","выручка")}${st(o.banned,"в бане")}</div>
+  ${ME.admin?`<div class="card sw ${o.maint?"on":""}" style="margin-top:10px" onclick="maint(${!o.maint})"><span>🛠 Режим техработ</span><i></i></div>`:""}
+  <h2>Пользователи</h2><input id="q" placeholder="Поиск: @ник, имя или ID" value="${esc(ADM.q)}" oninput="search(this.value)">
+  <div id="ulist">${usersHtml()}</div>
+  <h2>Топ команд</h2><div class="card">${o.top.map(t=>`<div class="sw"><code>.${esc(t.cmd)}</code><span>${t.n}</span></div>`).join("")||'<span class="hint">пока пусто</span>'}</div>
+  <h2>Журнал действий</h2><div class="card">${o.log.map(l=>`<div class="hint">${fd(l.ts)} · <span style="color:var(--tx)">${esc(l.text)}</span></div>`).join("")||'<span class="hint">пусто</span>'}</div>`}
+const usersHtml=()=>ADM.users.map(u=>`<div class="u" onclick="openUser(${u.id})"><span><b>${esc(u.name)}</b> <span class="hint">${u.user?"@"+esc(u.user):u.id}</span></span><span>${u.banned?'<span class="tag b">бан</span>':""}<span class="tag ${u.tier?"v":""}">${["FREE","PREMIUM","VIP"][u.tier]||"FREE"}</span></span></div>`).join("")||'<p class="hint">Никого не найдено</p>';
+let st;function search(v){ADM.q=v;clearTimeout(st);st=setTimeout(async()=>{try{ADM.users=(await api("/api/admin/users?q="+encodeURIComponent(v))).users;$("#ulist").innerHTML=usersHtml()}catch(e){toast(e.message)}},300)}
+async function maint(on){try{await api("/api/admin/maint",{on});ADM.ov.maint=on;ME.maint=on;render();toast(on?"Техработы включены":"Техработы выключены")}catch(e){toast(e.message)}}
+async function openUser(id){
+  try{const u=await api("/api/admin/user?id="+id);
+  const act=(a,l,c="g",x="")=>`<button class="btn s ${c}" onclick="doAct(${id},'${a}'${x})">${l}</button>`;
+  const g=(t,d,l)=>act("give",l,"g",`,'${t}',${d}`);
+  $("#sheetbody").innerHTML=`<div class="sw"><h1 style="margin:0">${esc(u.name)}</h1><button class="btn s g" onclick="closeSheet()">✕</button></div>
+  <p class="hint">${u.user?"@"+esc(u.user)+" · ":""}ID <code>${u.id}</code>${u.banned?' · <b style="color:var(--bad)">забанен</b>':""}${u.mod?" · 🛡 мини-админ":""}</p>
+  <div class="card">Подписки: ${u.subs.map(s=>`<b>${s.name}</b> до ${fd(s.until).slice(0,10)}`).join(" · ")||"нет (FREE)"}<br>Подключений: ${u.conns} · сообщений в журнале: ${u.msgs}<br>Последняя активность: ${u.seen?fd(u.seen):"—"}</div>
+  ${ME.admin?`<h2>Выдать</h2><div class="row">${g("premium",7,"PREMIUM 7 д")}${g("premium",30,"PREMIUM 30 д")}</div><div class="row" style="margin-top:8px">${g("vip",30,"VIP 30 д")}${g("vip",90,"VIP 90 д")}${g("both",30,"КОМБО 30 д")}</div>
+  <h2>Управление</h2><div class="row">${act("revoke","Снять подписки","g")}${u.banned?act("unban","Разбанить","g"):act("ban","Забанить","r")}${u.mod?act("mod_del","Снять мини-админа","g"):act("mod_add","Сделать мини-админом","g")}</div>`:'<p class="hint">Мини-админам доступен только просмотр.</p>'}`;
+  $("#sheet").classList.add("on")}catch(e){toast(e.message)}}
+const closeSheet=()=>$("#sheet").classList.remove("on");
+$("#sheet").onclick=e=>{if(e.target.id==="sheet")closeSheet()};
+async function doAct(id,action,tier,days){
+  if((action==="ban"||action==="revoke")&&!confirm("Точно?"))return;
+  try{const r=await api("/api/admin/action",{id,action,tier,days});toast("✓ "+r.note);await openUser(id);search(ADM.q);ADM.ov=await api("/api/admin/overview")}catch(e){toast(e.message)}}
+
+function render(){
+  const tabs=[["connect","🔌","Подключение"],["plans","💳","Тарифы"]];if(ME.staff)tabs.push(["admin",ME.admin?"👑":"🛡","Админка"]);
+  $("#nav").innerHTML=tabs.map(t=>`<button class="${tab===t[0]?"on":""}" onclick="go('${t[0]}')"><b>${t[1]}</b>${t[2]}</button>`).join("");
+  const keep=document.activeElement&&document.activeElement.id==="q";if(keep&&tab==="admin")return;
+  $("#app").innerHTML=tab==="plans"?vPlans():tab==="admin"&&ME.staff?vAdmin():vConnect()}
+async function go(t){tab=t;clearInterval(timer);render();window.scrollTo(0,0);
+  if(t==="connect")timer=setInterval(async()=>{try{const m=await api("/api/me");if(m.connected!==ME.connected){ME=m;render();if(m.connected)tg.HapticFeedback?.notificationOccurred("success")}}catch{}},4000);
+  if(t==="admin"){try{ADM.ov=await api("/api/admin/overview");ADM.users=(await api("/api/admin/users")).users;render()}catch(e){toast(e.message)}}}
+(async()=>{
+  if(!tg.initData){$("#app").innerHTML='<div class="card"><h1>Откройте из Telegram</h1><p class="hint">Это мини-приложение работает только внутри бота: нажмите кнопку «Открыть» в чате с ботом.</p></div>';return}
+  try{ME=await api("/api/me");const p=new URLSearchParams(location.search).get("tab");
+    await go(["plans","admin"].includes(p)&&(p!=="admin"||ME.staff)?p:"connect")}
+  catch(e){$("#app").innerHTML=`<div class="card"><h1>Ошибка</h1><p class="hint">${esc(e.message)}</p></div>`}})();
+</script></body></html>
