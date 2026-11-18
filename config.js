@@ -2,4 +2,4 @@
 // API_BASE — публичный https-адрес, где работает бот (WEB_PORT). Пусто = сайт покажет только инструкцию по подключению.
 // BOT_USERNAME — имя бота без @
 window.API_BASE = "";
-window.BOT_USERNAME = "";
+window.BOT_USERNAME = "lopsave_bot";
