@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ассистент</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="config.js"></script>
+<script src="commands.js"></script>
+<style>
+:root{--bg:#0b0d12;--tx:#eef0f6;--hint:#8a93a6;--card:#151922;--btn:#5b6cff;--btx:#fff;--ok:#34c759;--bad:#ff5a5f;--line:#ffffff14;--r:20px;--sh:none;color-scheme:dark}
+:root[data-theme=light]{--bg:#f3f5fa;--tx:#10132a;--hint:#6b7285;--card:#fff;--line:#0000000f;--sh:0 4px 18px #1b24401a;--btn:#4a5cf5;color-scheme:light}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+main{padding:62px 14px 0;max-width:640px;margin:0 auto;animation:in .25s ease}@keyframes in{from{opacity:0;transform:translateY(6px)}}
+h1{font-size:22px;margin:6px 2px 14px;letter-spacing:-.3px}h2{font-size:13px;margin:22px 4px 8px;color:var(--hint);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);border-radius:var(--r);padding:15px 17px;margin-bottom:10px}.hint{color:var(--hint);font-size:13px}
+nav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:5px;border-radius:24px;box-shadow:0 6px 24px #0003;max-width:620px;margin:0 auto;z-index:5}
+nav button{flex:1;background:none;border:0;color:var(--hint);font:inherit;font-size:10.5px;padding:7px 2px;border-radius:19px;transition:.2s}
+nav button b{display:block;font-size:20px;font-weight:400;line-height:1.2}nav button.on{background:var(--btn);color:var(--btx);font-weight:600}
+.btn{background:var(--btn);color:var(--btx);border:0;border-radius:14px;padding:13px 16px;font:inherit;font-weight:600;width:100%;transition:.15s}.btn:active{transform:scale(.97);opacity:.85}
+.btn.s{width:auto;padding:9px 14px;font-size:13px;border-radius:12px}.btn.g{background:#8882;color:var(--tx)}.btn.r{background:var(--bad);color:#fff}.btn.w{background:#fff3;color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.hero{border-radius:24px;padding:18px;color:#fff;background:linear-gradient(135deg,#5b6cff,#2fa8ff);margin-bottom:12px;position:relative;overflow:hidden}
+.hero.t1{background:linear-gradient(135deg,#4f7cff,#8a5cff)}.hero.t2{background:linear-gradient(135deg,#f5b942,#ee7a1f)}
+.hero:after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:#fff2}
+.big{display:flex;gap:14px;align-items:center;position:relative;z-index:1}.big b{font-size:19px}.big .hint{color:#ffffffcc}
+.av{width:62px;height:62px;border-radius:50%;background:#fff3;display:grid;place-items:center;font-size:26px;font-weight:700;object-fit:cover;flex:none;border:2px solid #fff6}
+.pill{display:inline-block;padding:3px 11px;border-radius:20px;background:#fff3;color:inherit;font-size:12px;font-weight:700;margin-top:6px}
+.bar{height:8px;border-radius:8px;background:#fff3;margin-top:12px;overflow:hidden}.bar i{display:block;height:100%;background:#fff;border-radius:8px}
+.status{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r);font-weight:600;margin-bottom:12px}.status.ok{background:#2fb34424;color:var(--ok)}.status.no{background:#f5a62326;color:#d98a00}
+.step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}.step:last-child{border:0}
+.num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--btn);color:var(--btx);display:grid;place-items:center;font-weight:700;font-size:14px}.step.done .num{background:var(--ok)}.step.done .t{opacity:.5}
+.t b{display:block}.t span{color:var(--hint);font-size:13px}
+code{background:#8883;padding:1px 6px;border-radius:6px;font-size:.92em}
+details{border-bottom:1px solid var(--line);padding:11px 0}details:last-child{border:0}summary{font-weight:600;cursor:pointer}details p{margin:8px 0 0;color:var(--hint)}
+.plan{border-radius:22px;padding:18px;margin-bottom:12px;color:#fff;position:relative;overflow:hidden}
+.plan.p0{background:var(--card);color:var(--tx);border:1px solid var(--line);box-shadow:var(--sh)}.plan.p1{background:linear-gradient(135deg,#4f7cff,#8a5cff)}.plan.p2{background:linear-gradient(135deg,#f5b942,#ee7a1f)}.plan.p3{background:linear-gradient(135deg,#ff5f8d,#ff8a3d)}
+.plan h3{margin:0;font-size:19px}.plan ul{margin:10px 0 14px;padding:0;list-style:none;font-size:13.5px;opacity:.95}.plan li{padding:2px 0}.plan li:before{content:"✓ ";font-weight:700}
+.price{font-size:26px;font-weight:800;margin-top:6px}.price small{font-size:13px;font-weight:500;opacity:.85}
+.badge{position:absolute;right:14px;top:14px;background:#fff;color:#e8453c;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);border-radius:var(--r);padding:14px 15px}.stat b{font-size:24px;display:block;letter-spacing:-.5px}
+input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;margin-bottom:8px;outline:none}input:focus{border-color:var(--btn)}
+.lnk{word-break:break-all;background:#8882;border-radius:12px;padding:11px;font-size:13px;margin:10px 0}
+.chip{display:inline-block;padding:6px 12px;border-radius:20px;background:#8882;font-size:13px;margin:0 6px 6px 0;cursor:pointer}
+.u{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--card);border-radius:14px;margin-bottom:6px;cursor:pointer}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;background:#8883;margin-left:6px}.tag.v{background:#f5a62333}.tag.b{background:#e5484d33;color:var(--bad)}
+.sw{display:flex;justify-content:space-between;align-items:center}.sw i{width:48px;height:29px;border-radius:20px;background:#8885;position:relative;transition:.2s}.sw i:after{content:"";position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;transition:.2s}.sw.on i{background:var(--ok)}.sw.on i:after{left:22px}
+.cm{padding:10px 0;border-bottom:1px solid var(--line)}.cm:last-child{border:0}.cm .h{color:var(--hint);font-size:13px}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#222e;color:#fff;padding:10px 18px;border-radius:22px;font-size:14px;z-index:99;opacity:0;transition:.25s;pointer-events:none;max-width:90%;text-align:center}.toast.on{opacity:1}
+.top{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:18px;font-weight:800;font-size:17px;line-height:40px;letter-spacing:-.3px;z-index:6}
+.tb{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:14px;z-index:6;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:18px;box-shadow:var(--sh)}
+.hide{display:none!important}
+</style></head><body>
+<div class="top">🤖 Ассистент</div><button class="tb" id="tb" onclick="cycleTheme()">🌓</button>
+<main id="app"><p class="hint">Загрузка…</p></main>
+<nav id="nav"></nav>
+<div class="toast" id="toast"></div>
+<script>
+const tg=window.Telegram.WebApp;tg.ready();tg.expand();
+const $=s=>document.querySelector(s);let ME=null,tab="connect",timer=null;const API=(window.API_BASE||"").replace(/\/$/,"");
+const U=(tg.initDataUnsafe&&tg.initDataUnsafe.user)||{};const NAME={1:"PREMIUM",2:"VIP"};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fd=t=>new Date(t*1000).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"});
+const lvl=t=>["FREE","PREMIUM","VIP"][t]||"FREE";const bot=()=>(ME&&ME.bot)||window.BOT_USERNAME||"";
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2200)}
+const TH=["auto","dark","light"];let th="auto";try{th=localStorage.getItem("th")||"auto"}catch{}
+function applyTheme(){const m=th==="auto"?(tg.colorScheme==="light"?"light":"dark"):th;document.documentElement.setAttribute("data-theme",m);
+  try{const c=m==="light"?"#f3f5fa":"#0b0d12";tg.setHeaderColor(c);tg.setBackgroundColor(c)}catch{}
+  const b=$("#tb");if(b)b.textContent={auto:"🌓",dark:"🌙",light:"☀️"}[th]}
+function cycleTheme(){th=TH[(TH.indexOf(th)+1)%3];try{localStorage.setItem("th",th)}catch{};applyTheme();toast({auto:"Тема: как в Telegram",dark:"Тема: тёмная",light:"Тема: светлая"}[th])}
+applyTheme();const VER="v18";
+const hap=k=>{try{tg.HapticFeedback.notificationOccurred(k)}catch{}};
+async function api(path,body){
+  const r=await fetch(API+path,{method:body?"POST":"GET",headers:{"X-Init-Data":tg.initData,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Ошибка "+r.status);return j}
+function snap(){try{const q=new URLSearchParams(location.search).get("d");if(!q)return null;
+  const d=JSON.parse(atob(q.replace(/-/g,"+").replace(/_/g,"/")));
+  return{offline:true,snap:true,connected:d.c,tier:d.t,subs:d.s.map(a=>({tier:a[0],name:NAME[a[0]],until:a[1]})),refs:d.r,inv:d.i||{},
+   staff:d.f>0,admin:d.f===2,prices:d.p,sub_days:d.sd,ref_days:d.rd,stats:d.a,recent:d.u||[],bot:window.BOT_USERNAME}}catch{return null}}
+const toBot=p=>tg.openTelegramLink(`https://t.me/${bot()}?start=${p}`);
+const done=()=>{try{return JSON.parse(localStorage.getItem("steps")||"[]")}catch{return[]}};
+function tick(i){const d=done();const k=d.indexOf(i);k<0?d.push(i):d.splice(k,1);try{localStorage.setItem("steps",JSON.stringify(d))}catch{};render()}
+
+const STEPS=[
+ ["Откройте настройки Telegram","Нажмите на свою аватарку или «Настройки» в меню."],
+ ["Изменить профиль","Кнопка «Изменить» рядом с вашим именем."],
+ ["Автоматизация чатов","Прокрутите вниз: пункт может называться «Чат-боты» или «Telegram для бизнеса → Чат-боты»."],
+ ["Укажите бота @BOT","Введите @BOT и выберите, с какими чатами он работает (например, все личные)."],
+ ["Включите права","Отвечать на сообщения, читать сообщения, удалять сообщения. Для .timeprofile ещё «менять имя профиля»."],
+ ["Нажмите /start в боте","Без этого бот не сможет присылать вам удалённые сообщения и напоминания."],
+ ["Проверьте: отправьте .ping","В любом личном чате напишите .ping — бот ответит «pong». Все команды — .help"]];
+const FAQ=[
+ ["Нет пункта «Автоматизация чатов»","Обновите Telegram до последней версии. На старых версиях раздел бывает только у Premium."],
+ ["Бот не отвечает на .ping","Команды работают только в личных чатах и только когда их пишете вы, с точкой в начале. Проверьте, что боту выданы права «отвечать на сообщения»."],
+ ["Не приходят удалённые сообщения","Нажмите /start в боте и проверьте право «читать сообщения». Бот видит только то, что пришло после подключения."],
+ ["Как отключить","Настройки → Изменить профиль → Автоматизация чатов → удалить бота."],
+ ["Это безопасно?","Бот видит личные чаты, которые вы ему разрешили. Вы в любой момент можете убрать его или ограничить список чатов."]];
+
+function vConnect(){
+  const c=ME.connected,ok=c>0,d=done(),b=bot();
+  const msg=c==null?"ℹ️ Статус тут недоступен, идите по шагам":ok?"✅ Бот подключён к вашему аккаунту":ME.offline?"⏳ Пока не подключён (на момент открытия)":"⏳ Ждём подключения… страница обновится сама";
+  return `<h1>🔌 Подключение</h1><div class="status ${ok?"ok":"no"}">${msg}</div>
+  ${ok?`<div class="card">Готово! Отправьте <code>.ping</code> в любом личном чате и откройте <code>.help</code>.</div>`:""}
+  <div class="card">${STEPS.map((s,i)=>`<div class="step ${d.includes(i)?"done":""}" onclick="tick(${i})"><div class="num">${d.includes(i)?"✓":i+1}</div><div class="t"><b>${esc(s[0].replace("@BOT","@"+b))}</b><span>${esc(s[1].replace("@BOT","@"+b))}</span></div></div>`).join("")}</div>
+  ${b?`<button class="btn g" onclick="tg.openTelegramLink('https://t.me/${b}')">Открыть чат с ботом</button>`:""}
+  <h2>Частые вопросы</h2><div class="card">${FAQ.map(f=>`<details><summary>${esc(f[0])}</summary><p>${esc(f[1])}</p></details>`).join("")}</div>`}
+
+function copy(t){try{navigator.clipboard.writeText(t);toast("Скопировано")}catch{toast("Не удалось скопировать")}}
+function promo(){const v=($("#pc").value||"").trim().toUpperCase().replace(/[^A-Z0-9-]/g,"");if(!v)return toast("Введите промокод");toBot("promo_"+v)}
+function vProfile(){
+  if(!U.id)return `<h1>🏠 Профиль</h1><div class="card"><b>Нет данных Telegram</b><p class="hint" style="margin:6px 0 0">Страница открыта не как мини-приложение. Закройте её и откройте кнопкой «📱 Открыть мини-приложение» в меню бота (/start).</p></div>`;
+  const miss=ME.offline&&!ME.snap?`<div class="status no">⚠️ Данные подписки не получены. Откройте приложение кнопкой «📱 Открыть мини-приложение» из меню /start.</div>`:"";
+  const link=`https://t.me/${bot()}?start=ref_${U.id}`,subs=ME.subs||[],top=subs.slice().sort((a,b)=>b.tier-a.tier)[0];
+  const share=`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Крутой ассистент для Telegram. Заходи по моей ссылке")}`;
+  const left=top?Math.max(0,Math.ceil((top.until*1000-Date.now())/864e5)):0,sd=ME.sub_days||30,pc=Math.min(100,left/sd*100);
+  return miss+`<div class="hero t${ME.tier||0}"><div class="big">${U.photo_url?`<img class="av" src="${esc(U.photo_url)}">`:`<div class="av">${esc((U.first_name||"?")[0])}</div>`}
+   <div><b>${esc((U.first_name||"")+" "+(U.last_name||""))}</b><div class="hint">${U.username?"@"+esc(U.username)+" · ":""}ID ${U.id}</div><span class="pill">${lvl(ME.tier)}</span></div></div>
+   ${top?`<div style="margin-top:14px;position:relative">Осталось <b>${left} дн.</b> · до ${fd(top.until)}</div><div class="bar"><i style="width:${pc}%"></i></div>`:`<div style="margin-top:12px;position:relative" class="hint">Подписки нет. Загляните во вкладку «Подписки»</div>`}</div>
+  <div class="grid"><div class="stat"><b>${ME.connected==null?"—":ME.connected>0?"✅":"❌"}</b><span class="hint">подключение</span></div><div class="stat"><b>${ME.refs==null?"—":ME.refs}</b><span class="hint">друзей приглашено</span></div></div>
+  <h2>Пригласить друзей</h2><div class="card">${ME.ref_days?`<span class="hint">За каждого друга, который подключит бота, вы получаете +${ME.ref_days} дн. PREMIUM.</span>`:""}
+   ${bot()?`<div class="lnk">${esc(link)}</div><div class="row"><button class="btn s" onclick="copy('${link}')">Копировать</button><button class="btn s g" onclick="tg.openTelegramLink('${share}')">Поделиться</button></div>`:'<p class="hint">Впишите BOT_USERNAME в config.js, чтобы показать ссылку.</p>'}</div>
+  <h2>Промокод</h2><div class="card"><input id="pc" placeholder="Например GIFT-ABCD2345"><button class="btn" onclick="promo()">Активировать</button></div>`}
+
+const PLANS=[
+ [0,"🆓 FREE",["Основные команды и утилиты","Развлечения, игры, серии","Текст и числа"]],
+ [1,"⭐ PREMIUM",["Анимации и эффекты","Медиа: стикеры, голос, removebg","Спам, afk, later"]],
+ [2,"👑 VIP",["Всё из PREMIUM","Модерация: mute, antimat, antispam","Профиль и авто-функции"]],
+ [3,"🔥 КОМБО",["PREMIUM и VIP сразу","Все функции без ограничений"]]];
+function buy(k,g){const l=(ME.inv||{})[(g?"g":"")+k];
+  if(!l)return toast("Откройте приложение кнопкой из меню /start");
+  tg.openInvoice("https://t.me/"+l,async s=>{
+    if(s==="paid"){hap("success");toast("🎉 Оплачено! Подписка активируется за пару секунд");
+      if(!ME.offline)setTimeout(async()=>{try{ME=await api("/api/me");render()}catch{}},2500);
+      else ME.paid=true,render()}
+    else if(s==="failed"){hap("error");toast("Оплата не прошла")}})}
+function vPlans(){
+  const P=ME.prices||{},sd=ME.sub_days||30,cur=new Set((ME.subs||[]).map(s=>s.tier));
+  return `<h1>💎 Подписки</h1>${ME.paid?'<div class="status ok">🎉 Оплата прошла. Откройте меню /start, чтобы увидеть обновление</div>':""}
+  ${PLANS.map(([t,n,f])=>{const act=t===0?!cur.size:t===3?cur.has(1)&&cur.has(2):cur.has(t);
+   return `<div class="plan p${t}">${t===3?'<span class="badge">ВЫГОДНО</span>':""}<h3>${n}</h3><div class="price">${t?(P[t]?P[t]+" ⭐":"—"):"Бесплатно"} ${t&&P[t]?`<small>/ ${sd} дн. · ≈ ${(P[t]/sd).toFixed(1)} ⭐ в день</small>`:""}</div>
+   <ul>${f.map(x=>`<li>${x}</li>`).join("")}</ul>
+   ${t?(act?'<div class="pill" style="margin:0">✓ Активно</div>':`<div class="row"><button class="btn s w" onclick="buy(${t})">Купить</button><button class="btn s w" onclick="buy(${t},1)">🎁 Подарить</button></div>`):act?'<div class="hint">Ваш текущий тариф</div>':""}</div>`}).join("")}
+  <p class="hint">Оплата Telegram Stars прямо в приложении. «Подарить» создаёт одноразовый код, который можно отправить другу. Активировать его можно во вкладке «Профиль».</p>`}
+
+let CQ="";
+function cmdsHtml(){
+  const q=CQ.trim().toLowerCase().replace(/^\./,"");
+  return (window.COMMANDS||[]).map(s=>{
+    const l=s.cmds.filter(c=>!q||c.n.join(" ").toLowerCase().includes(q)||c.h.toLowerCase().includes(q));if(!l.length)return"";
+    return `<details ${q?"open":""}><summary>${s.icon} ${esc(s.title)} <span class="hint">· ${l.length}</span></summary>${l.map(c=>`<div class="cm"><code>${esc(c.n[0])}${c.u?" "+esc(c.u):""}</code>${c.n.length>1?` <span class="hint">/ ${esc(c.n.slice(1).join(" "))}</span>`:""}${c.t?` <span class="tag v">🔒 ${lvl(c.t)}</span>`:""}<div class="h">${esc(c.h)}</div></div>`).join("")}</details>`}).join("")||'<p class="hint">Ничего не найдено</p>'}
+function vCmds(){const n=(window.COMMANDS||[]).reduce((a,s)=>a+s.cmds.length,0);
+  return `<h1>📖 Команды</h1><p class="hint" style="margin:-6px 2px 10px">Всего ${n}. Пишите их в любом личном чате с точкой в начале.</p><input id="cq" placeholder="🔍 Поиск команды" value="${esc(CQ)}" oninput="CQ=this.value;$('#clist').innerHTML=cmdsHtml()"><div class="card" id="clist">${cmdsHtml()}</div>`}
+
+let ADM={q:"",ov:null,users:[]};
+function vAdmin(){
+  if(ME.staff===null)return `<h1>👑 Админка</h1><div class="card"><b>Права пока не подтверждены</b><p class="hint" style="margin:6px 0 0">Откройте приложение кнопкой «📱 Открыть мини-приложение» (или «🖥 Веб-админка») в меню бота /start. Если вы админ, здесь появится панель.</p></div>`;
+  const o=ADM.ov||(ME.stats?{users:ME.stats.users,active24:ME.stats.active24,premium:ME.stats.premium,vip:ME.stats.vip,stars:ME.stats.stars,banned:ME.stats.banned,maint:ME.stats.maint,top:[],log:[]}:null);
+  if(!o)return `<h1>👑 Админка</h1><p class="hint">Загрузка…</p>`;
+  const st=(a,b)=>`<div class="stat"><b>${a}</b><span class="hint">${b}</span></div>`,live=!ME.offline;
+  const ids=(live?ADM.users.map(u=>[u.id,u.name,u.tier]):ME.recent||[]);
+  const A=(a,l,c="g",x="")=>`<button class="btn s ${c}" onclick="run('${a}'${x})">${l}</button>`,G=(t,d,l)=>A("give",l,"g",`,'${t}',${d}`);
+  return `<h1>${ME.admin?"👑 Админка":"🛡 Мини-админка"}</h1>
+  <div class="grid">${st(o.users,"пользователей")}${st(o.active24,"активны за 24 ч")}${st(o.premium,"PREMIUM")}${st(o.vip,"VIP")}${st(o.stars+" ⭐","выручка")}${st(o.banned,"в бане")}</div>
+  ${live&&ME.admin?`<div class="card sw ${o.maint?"on":""}" style="margin-top:10px" onclick="maint(${!o.maint})"><span>🛠 Режим техработ</span><i></i></div>`:""}
+  <h2>Пользователь</h2><div class="card"><input id="uid" inputmode="numeric" placeholder="ID пользователя" value="${esc(ADM.sel||"")}" oninput="ADM.sel=this.value">
+   ${live?`<input id="q" placeholder="…или поиск по @нику/имени" value="${esc(ADM.q)}" oninput="search(this.value)">`:""}
+   <div id="ulist">${ids.map(u=>`<span class="chip" onclick="pick(${u[0]})">${esc(u[1]||u[0])} · ${lvl(u[2])}</span>`).join("")}</div>
+   ${ME.admin?`<div class="row" style="margin-top:6px">${G("premium",7,"PREMIUM 7 д")}${G("premium",30,"PREMIUM 30 д")}</div><div class="row" style="margin-top:8px">${G("vip",30,"VIP 30 д")}${G("vip",90,"VIP 90 д")}${G("both",30,"КОМБО 30 д")}</div>
+   <div class="row" style="margin-top:8px">${A("revoke","Снять подписки")}${A("ban","Забанить","r")}${A("unban","Разбанить")}</div><div class="row" style="margin-top:8px">${A("mod_add","🛡 В мини-админы")}${A("mod_del","Снять мини-админа")}</div>`:'<p class="hint">Мини-админам доступен только просмотр.</p>'}
+   ${live?"":'<p class="hint" style="margin:10px 0 0">Действие откроет чат с ботом и выполнится после отправки.</p>'}</div>
+  ${live?`<h2>Топ команд</h2><div class="card">${o.top.map(t=>`<div class="sw"><code>.${esc(t.cmd)}</code><span>${t.n}</span></div>`).join("")||'<span class="hint">пока пусто</span>'}</div>
+  <h2>Журнал действий</h2><div class="card">${o.log.map(l=>`<div class="hint">${fd(l.ts)} · <span style="color:var(--tx)">${esc(l.text)}</span></div>`).join("")||'<span class="hint">пусто</span>'}</div>`:""}`}
+function pick(id){ADM.sel=String(id);$("#uid").value=id}
+let st;function search(v){ADM.q=v;clearTimeout(st);st=setTimeout(async()=>{try{ADM.users=(await api("/api/admin/users?q="+encodeURIComponent(v))).users;$("#ulist").innerHTML=ADM.users.map(u=>`<span class="chip" onclick="pick(${u.id})">${esc(u.name)} · ${lvl(u.tier)}</span>`).join("")}catch(e){toast(e.message)}},300)}
+async function maint(on){try{await api("/api/admin/maint",{on});ADM.ov.maint=on;render();toast(on?"Техработы включены":"Техработы выключены")}catch(e){toast(e.message)}}
+async function run(action,tier,days){
+  const id=parseInt(($("#uid").value||"").trim());if(!id)return toast("Укажите ID пользователя");
+  if((action==="ban"||action==="revoke")&&!confirm("Точно?"))return;
+  if(ME.offline)return toBot(`adm_${action}_${id}${tier?`_${tier}_${days}`:""}`);
+  try{const r=await api("/api/admin/action",{id,action,tier,days});hap("success");toast("✓ "+r.note);ADM.ov=await api("/api/admin/overview")}catch(e){toast(e.message)}}
+
+function render(){
+  const tabs=[["profile","🏠","Профиль"],["plans","💎","Подписки"],["connect","🔌","Подключение"],["cmds","📖","Команды"]];
+  if(ME.staff!==false)tabs.push(["admin",ME.admin?"👑":"🛡","Админка"]);
+  $("#nav").innerHTML=tabs.map(t=>`<button class="${tab===t[0]?"on":""}" onclick="go('${t[0]}')"><b>${t[1]}</b>${t[2]}</button>`).join("");
+  if(document.activeElement&&["q","cq","uid","pc"].includes(document.activeElement.id))return;
+  const ok=tabs.some(t=>t[0]===tab),v={connect:vConnect,profile:vProfile,plans:vPlans,cmds:vCmds,admin:vAdmin}[ok?tab:"connect"];$("#app").innerHTML=v()+`<p class="hint" style="text-align:center;margin:20px 0 0;font-size:11px">${VER} · Telegram: ${U.id?"✓":"✗"} · данные: ${ME.offline?(ME.snap?"из кнопки ✓":"нет ✗"):"сервер ✓"}</p>`}
+async function go(t){tab=t;clearInterval(timer);render();window.scrollTo(0,0);
+  if(t==="connect"&&!ME.offline)timer=setInterval(async()=>{try{const m=await api("/api/me");if(m.connected!==ME.connected){ME=m;render();if(m.connected)hap("success")}}catch{}},4000);
+  if(t==="admin"&&!ME.offline){try{ADM.ov=await api("/api/admin/overview");ADM.users=(await api("/api/admin/users")).users;render()}catch(e){toast(e.message)}}}
+(async()=>{
+  const p=new URLSearchParams(location.search).get("tab");
+  try{if(!tg.initData)throw new Error("no-tg");ME=await api("/api/me")}
+  catch(e){if(e.message==="Доступ закрыт"){$("#app").innerHTML='<div class="card"><h1>Доступ закрыт</h1></div>';return}
+    ME=snap()||{offline:true,connected:null,tier:null,subs:[],refs:null,inv:{},staff:null,prices:{},bot:window.BOT_USERNAME}}
+  await go(["profile","plans","connect","cmds","admin"].includes(p)&&(p!=="admin"||ME.staff)?p:(U.id&&ME.connected!==0?"profile":"connect"))})();
+</script></body></html>
